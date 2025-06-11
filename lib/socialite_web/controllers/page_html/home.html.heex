@@ -1,0 +1,269 @@
+<div class="sm:flex">
+  
+  <div class="relative lg:w-[580px] md:w-96 w-full p-10 min-h-screen bg-white shadow-xl flex items-center pt-10 dark:bg-slate-900 z-10">
+
+    <div class="w-full lg:max-w-sm mx-auto space-y-10">
+
+      <!-- Logo Section -->
+      <center>
+        <a href="#"> 
+          <img src={~p"/images/cross.gif"} class="w-28 dark:hidden" alt="Emanuel Network">
+        </a>
+        <a href="#"> 
+          <img src={~p"/images/logo-light.png"} class="w-28 absolute top-10 left-10 hidden dark:!block" alt="Emanuel Network">
+        </a>
+        <br/>
+        <h1 class="text-2xl font-semibold mb-1.5"> Emanuel Network </h1>
+      </center>
+      
+      <hr>
+
+      <!-- Login/Register Toggle Tabs -->
+      <div class="flex border-b border-gray-200">
+        <button id="login-tab" class="flex-1 py-2 px-4 text-center border-b-2 border-blue-500 text-blue-600 font-medium">Sign In</button>
+        <button id="register-tab" class="flex-1 py-2 px-4 text-center text-gray-500 font-medium">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form" class="space-y-7 text-sm text-black font-medium dark:text-white">
+        <form action={~p"/login"} method="post" class="space-y-7">
+          <input type="hidden" name="_csrf_token" value={get_csrf_token()}>
+          
+          <!-- Email -->
+          <div>
+            <label for="login-email" class="block text-sm font-semibold leading-6 text-zinc-800">Email address</label>
+            <div class="mt-2.5">
+              <input 
+                id="login-email"
+                name="email" 
+                type="email"
+                placeholder="email@address.com" 
+                required
+                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-800 dark:bg-white/5"
+              />
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label for="login-password" class="block text-sm font-semibold leading-6 text-zinc-800">Password</label>
+            <div class="mt-2.5">
+              <input 
+                id="login-password"
+                name="password" 
+                type="password"
+                placeholder="*******"
+                required
+                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-800 dark:bg-white/5"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <input 
+                id="remember-me" 
+                name="remember_me" 
+                type="checkbox"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label for="remember-me" class="text-sm">Remember me</label>
+            </div>
+            <a href="#" class="text-blue-700">Forgot password</a>
+          </div>
+
+          <!-- Submit Button -->
+          <div>
+            <button type="submit" class="button bg-primary text-white w-full">Sign in</button>
+</div>
+
+        </form>
+
+        <hr>
+
+        <!-- Register Link -->
+        <div>
+          <center>
+            <p class="text-sm text-gray-700 font-normal">
+              If you haven't signed up yet. 
+              <button id="show-register" class="text-blue-700 cursor-pointer">Register here!</button>
+            </p>
+          </center>
+        </div>
+      </div>
+
+      <!-- Register Form (Hidden by default) -->
+      <div id="register-form" class="space-y-7 text-sm text-black font-medium dark:text-white hidden">
+        
+        <!-- Title -->
+        <div>
+          <h2 class="text-2xl font-semibold mb-1.5">Sign up to get started</h2>
+          <p class="text-sm text-gray-700 font-normal">
+            If you already have an account, 
+            <button id="show-login" class="text-blue-700 cursor-pointer">Login here!</button>
+          </p>
+        </div>
+
+        <form action={~p"/register"} method="post" class="space-y-7">
+          <input type="hidden" name="_csrf_token" value={get_csrf_token()}>
+          
+          <div class="grid grid-cols-2 gap-4 gap-y-7">
+
+            <!-- First Name -->
+            <div>
+              <label for="first-name" class="block text-sm font-semibold leading-6 text-zinc-800">First name</label>
+              <div class="mt-2.5">
+                <input 
+                  id="first-name"
+                  name="first_name" 
+                  type="text"
+                  placeholder="First name" 
+                  required
+                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-800 dark:bg-white/5"
+                />
+              </div>
+            </div>
+
+            <!-- Last Name -->
+            <div>
+              <label for="last-name" class="block text-sm font-semibold leading-6 text-zinc-800">Last name</label>
+              <div class="mt-2.5">
+                <input 
+                  id="last-name"
+                  name="last_name" 
+                  type="text"
+                  placeholder="Last name" 
+                  required
+                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-800 dark:bg-white/5"
+                />
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="col-span-2">
+              <label for="register-email" class="block text-sm font-semibold leading-6 text-zinc-800">Email address</label>
+              <div class="mt-2.5">
+                <input 
+                  id="register-email"
+                  name="email" 
+                  type="email"
+                  placeholder="Email" 
+                  required
+                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-800 dark:bg-white/5"
+                />
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div>
+              <label for="register-password" class="block text-sm font-semibold leading-6 text-zinc-800">Password</label>
+              <div class="mt-2.5">
+                <input 
+                  id="register-password"
+                  name="password" 
+                  type="password"
+                  placeholder="***"
+                  required
+                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-800 dark:bg-white/5"
+                />
+        </div>
+          </div>
+
+            <!-- Confirm Password -->
+          <div>
+              <label for="confirm-password" class="block text-sm font-semibold leading-6 text-zinc-800">Confirm Password</label>
+              <div class="mt-2.5">
+                <input 
+                  id="confirm-password"
+                  name="password_confirmation" 
+                  type="password"
+                  placeholder="***"
+                  required
+                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-800 dark:bg-white/5"
+                />
+          </div>
+            </div>
+
+            <!-- Terms Checkbox -->
+            <div class="col-span-2">
+              <label class="inline-flex items-center">
+                <input 
+                  id="accept-terms"
+                  name="accept_terms" 
+                  type="checkbox"
+                  required
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span class="ml-2">you agree to our <a href="#" class="text-blue-700 hover:underline">terms of use</a></span>
+              </label>
+            </div>
+
+          </div>
+
+          <!-- Submit Button -->
+          <div>
+            <button type="submit" class="button bg-primary text-white w-full">Get Started</button>
+          </div>
+          
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Image Slider Section -->
+  <div class="flex-1 relative bg-primary max-md:hidden">
+    <div class="relative w-full h-full">
+      <div class="uk-slideshow-items w-full h-full"> 
+        <div class="w-full h-full relative">
+          <img src={~p"/images/post/learn.jpg"} alt="" class="w-full h-full object-cover">
+          <div class="absolute bottom-0 w-full z-10">
+            <div class="max-w-xl w-full mx-auto pb-32 px-5 z-30 relative"> 
+              <img class="w-12" src={~p"/images/logo-icon.png"} alt="Emanuel Network">
+              <h4 class="!text-white text-2xl font-semibold mt-7">Meet New People</h4> 
+              <p class="!text-white text-lg mt-7 leading-8">Connect with friends and family. Share your moments and stay updated on what's happening in your social circle.</p>   
+            </div> 
+          </div>
+          <div class="w-full h-96 bg-gradient-to-t from-black absolute bottom-0 left-0"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- JavaScript for form toggling -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const showRegisterBtn = document.getElementById('show-register');
+    const showLoginBtn = document.getElementById('show-login');
+
+    function showLogin() {
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+      loginTab.classList.add('border-blue-500', 'text-blue-600');
+      loginTab.classList.remove('text-gray-500');
+      registerTab.classList.remove('border-blue-500', 'text-blue-600');
+      registerTab.classList.add('text-gray-500');
+    }
+
+    function showRegister() {
+      registerForm.classList.remove('hidden');
+      loginForm.classList.add('hidden');
+      registerTab.classList.add('border-blue-500', 'text-blue-600');
+      registerTab.classList.remove('text-gray-500');
+      loginTab.classList.remove('border-blue-500', 'text-blue-600');
+      loginTab.classList.add('text-gray-500');
+    }
+
+    loginTab.addEventListener('click', showLogin);
+    registerTab.addEventListener('click', showRegister);
+    showRegisterBtn.addEventListener('click', showRegister);
+    showLoginBtn.addEventListener('click', showLogin);
+  });
+</script>
