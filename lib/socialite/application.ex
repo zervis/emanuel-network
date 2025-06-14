@@ -7,6 +7,7 @@ defmodule Socialite.Application do
 
   @impl true
   def start(_type, _args) do
+
     children = [
       SocialiteWeb.Telemetry,
       Socialite.Repo,

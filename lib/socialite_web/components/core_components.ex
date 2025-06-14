@@ -19,6 +19,38 @@ defmodule SocialiteWeb.CoreComponents do
 
   alias Phoenix.LiveView.JS
 
+  # Import verified routes for ~p sigil
+  use Phoenix.VerifiedRoutes,
+    endpoint: SocialiteWeb.Endpoint,
+    router: SocialiteWeb.Router,
+    statics: SocialiteWeb.static_paths()
+
+  @doc """
+  Helper function to get full name from either Socialite.User or Socialite.Accounts.User struct
+  """
+  def get_user_full_name(%Socialite.User{first_name: first_name, last_name: last_name}) do
+    "#{first_name} #{last_name}"
+  end
+
+  def get_user_full_name(%Socialite.Accounts.User{first_name: first_name, last_name: last_name}) do
+    "#{first_name} #{last_name}"
+  end
+
+  def get_user_full_name(_), do: "Unknown User"
+
+  @doc """
+  Helper function to get avatar URL from either Socialite.User or Socialite.Accounts.User struct
+  """
+  def get_user_avatar_url(%Socialite.User{avatar: avatar}) when not is_nil(avatar) and avatar != "" do
+    avatar
+  end
+
+  def get_user_avatar_url(%Socialite.Accounts.User{avatar: avatar}) when not is_nil(avatar) and avatar != "" do
+    avatar
+  end
+
+  def get_user_avatar_url(_), do: "/images/default-avatar.png"
+
   @doc """
   Renders a modal.
 
@@ -672,5 +704,294 @@ defmodule SocialiteWeb.CoreComponents do
   """
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+  end
+
+  @doc """
+  Renders the main navigation header.
+  """
+  attr :current_user, :any, default: nil
+  attr :notifications_count, :integer, default: 0
+  attr :messages_count, :integer, default: 0
+  attr :conn, :any, required: true
+
+  def navigation(assigns) do
+    ~H"""
+    <header class="z-[100] h-16 fixed top-0 left-0 w-full flex items-center bg-white/80 backdrop-blur-xl border-b border-slate-200">
+      <div class="flex items-center w-full xl:px-6 px-2">
+        <div class="2xl:w-72 lg:w-64">
+          <!-- left -->
+          <div class="flex items-center gap-1">
+            <!-- icon menu -->
+            <button id="root-sidebar-toggle" class="flex items-center justify-center w-8 h-8 text-xl rounded-full hover:bg-gray-100 xl:hidden group">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+            <div id="root-logo">
+              <a href={if @current_user, do: ~p"/feed", else: ~p"/"}>
+                <img src={~p"/images/cross.gif"} alt="" class="w-8 md:block hidden">
+                <img src={~p"/images/logo-mobile.png"} class="hidden max-md:block w-20" alt="">
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-1 relative">
+          <div class="max-w-[1220px] mx-auto flex items-center">
+            <!-- search -->
+            <form action={~p"/search"} method="get" class="xl:w-[680px] sm:w-96 sm:relative rounded-xl overflow-hidden bg-gray-100 max-md:hidden">
+              <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input type="text" name="q" placeholder="Search people and groups..." class="w-full pl-10 pr-4 py-3 bg-transparent text-sm focus:outline-none" value={@conn.params["q"] || ""}>
+            </form>
+          </div>
+        </div>
+
+        <!-- header icons -->
+        <div class="flex items-center sm:gap-4 gap-2 text-black">
+          <%= if @current_user do %>
+            <!-- Notifications Button -->
+            <div class="relative">
+              <a
+                href={~p"/notifications"}
+                class="sm:p-2 p-1 rounded-full relative sm:bg-gray-100 hover:bg-gray-200 transition-colors inline-block"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"></path>
+                </svg>
+                <%= if @notifications_count > 0 do %>
+                  <div class="absolute top-0 right-0 -m-1 bg-red-600 text-white text-xs px-1 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                    <%= if @notifications_count > 99, do: "99+", else: @notifications_count %>
+                  </div>
+                <% end %>
+              </a>
+            </div>
+
+            <!-- Messages Button -->
+            <div class="relative">
+              <a
+                href={~p"/messages"}
+                class="sm:p-2 p-1 rounded-full relative sm:bg-gray-100 hover:bg-gray-200 transition-colors inline-block"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <%= if @messages_count > 0 do %>
+                  <div class="absolute top-0 right-0 -m-1 bg-blue-600 text-white text-xs px-1 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                    <%= if @messages_count > 99, do: "99+", else: @messages_count %>
+                  </div>
+                <% end %>
+              </a>
+            </div>
+          <% end %>
+
+          <!-- User Avatar Dropdown -->
+          <%= if @current_user do %>
+            <div class="relative" id="user-menu">
+              <button
+                type="button"
+                class="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                onclick="toggleUserMenu()"
+              >
+                <img
+                  src={get_user_avatar_url(@current_user)}
+                  alt="Profile"
+                  class="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                />
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              <!-- Dropdown Menu -->
+              <div
+                id="user-dropdown"
+                class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 hidden"
+              >
+                <div class="px-4 py-2 border-b border-gray-100">
+                  <p class="text-sm font-medium text-gray-900"><%= get_user_full_name(@current_user) %></p>
+                  <p class="text-xs text-gray-500"><%= @current_user.email %></p>
+                </div>
+                <a
+                  href={~p"/users/#{@current_user.id}"}
+                  class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                  View Profile
+                </a>
+                <a
+                  href={~p"/settings"}
+                  class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  Settings
+                </a>
+                <div class="border-t border-gray-100 mt-1 pt-1">
+                  <a
+                    href={~p"/logout"}
+                    class="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Logout
+                  </a>
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <a href={~p"/"} class="text-gray-500 hover:text-gray-700">Login</a>
+          <% end %>
+        </div>
+      </div>
+    </header>
+    """
+  end
+
+  @doc """
+  Renders the main sidebar navigation.
+  """
+  attr :current_user, :any, default: nil
+  attr :current_path, :string, default: ""
+  attr :unread_notifications_count, :integer, default: 0
+  attr :unread_messages_count, :integer, default: 0
+  attr :friends_list, :list, default: []
+
+  def sidebar(assigns) do
+    ~H"""
+    <!-- sidebar -->
+    <div id="root-site__sidebar" class="fixed top-0 left-0 z-[99] pt-16 bg-gray-50 overflow-hidden transition-transform xl:duration-500 max-xl:w-full max-xl:-translate-x-full">
+      <!-- sidebar inner -->
+      <div class="p-2 pt-4 shadow-sm 2xl:w-72 sm:w-64 w-[80%] h-[calc(100vh-64px)] relative z-30 max-lg:border-r overflow-y-auto">
+        <div class="pr-4">
+          <nav id="root-side">
+            <ul class="space-y-2">
+              <%= if @current_user do %>
+                <li class={if String.contains?(@current_path, "/feed"), do: "active", else: ""}>
+                  <a href={~p"/feed"} class={if String.contains?(@current_path, "/feed"), do: "flex items-center gap-4 p-3 rounded-xl text-blue-600 bg-blue-50 font-medium", else: "flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium"}>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span>Feed</span>
+                  </a>
+                </li>
+                <li class={if String.contains?(@current_path, "/messages"), do: "active", else: ""}>
+                  <a href={~p"/messages"} class={if String.contains?(@current_path, "/messages"), do: "flex items-center gap-4 p-3 rounded-xl text-blue-600 bg-blue-50 font-medium", else: "flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium"}>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <span>Messages</span>
+                    <%= if @unread_messages_count > 0 do %>
+                      <span class="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-auto"><%= @unread_messages_count %></span>
+                    <% end %>
+                  </a>
+                </li>
+                <li class={if String.contains?(@current_path, "/groups"), do: "active", else: ""}>
+                  <a href={~p"/groups"} class={if String.contains?(@current_path, "/groups"), do: "flex items-center gap-4 p-3 rounded-xl text-blue-600 bg-blue-50 font-medium", else: "flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium"}>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span>Groups</span>
+                  </a>
+                </li>
+                <li class={if String.contains?(@current_path, "/events"), do: "active", else: ""}>
+                  <a href={~p"/events"} class={if String.contains?(@current_path, "/events"), do: "flex items-center gap-4 p-3 rounded-xl text-blue-600 bg-blue-50 font-medium", else: "flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium"}>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Events</span>
+                  </a>
+                </li>
+                <li class={if String.contains?(@current_path, "/friends"), do: "active", else: ""}>
+                  <a href={~p"/friends"} class={if String.contains?(@current_path, "/friends"), do: "flex items-center gap-4 p-3 rounded-xl text-blue-600 bg-blue-50 font-medium", else: "flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium"}>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span>Friends</span>
+                  </a>
+                </li>
+                <li class={if String.contains?(@current_path, "/tags"), do: "active", else: ""}>
+                  <a href={~p"/tags"} class={if String.contains?(@current_path, "/tags"), do: "flex items-center gap-4 p-3 rounded-xl text-blue-600 bg-blue-50 font-medium", else: "flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium"}>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    <span>Tags & Interests</span>
+                  </a>
+                </li>
+                <li class={if String.contains?(@current_path, "/leaderboard"), do: "active", else: ""}>
+                  <a href={~p"/leaderboard"} class={if String.contains?(@current_path, "/leaderboard"), do: "flex items-center gap-4 p-3 rounded-xl text-blue-600 bg-blue-50 font-medium", else: "flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium"}>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <span>Leaderboard</span>
+                  </a>
+                </li>
+              <% else %>
+                <!-- Non-logged-in users see limited navigation -->
+                <li>
+                  <a href={~p"/"} class="flex items-center gap-4 p-3 rounded-xl text-gray-600 hover:bg-gray-100 font-medium">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span>Home</span>
+                  </a>
+                </li>
+                <li>
+                  <div class="flex items-center gap-4 p-3 rounded-xl text-gray-400 cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <span>Messages</span>
+                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Login Required</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="flex items-center gap-4 p-3 rounded-xl text-gray-400 cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span>Groups</span>
+                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Login Required</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="flex items-center gap-4 p-3 rounded-xl text-gray-400 cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Events</span>
+                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Login Required</span>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          </nav>
+        </div>
+      </div>
+
+      <!-- sidebar overlay -->
+      <div id="root-site__sidebar__overlay" class="absolute top-0 left-0 z-20 w-screen h-screen xl:hidden backdrop-blur-sm bg-black/20 hidden"></div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the main content wrapper with proper spacing for navigation and sidebars.
+  """
+  attr :class, :string, default: ""
+  slot :inner_block, required: true
+
+  def main_content(assigns) do
+    ~H"""
+    <main id="site__main" class={"2xl:ml-72 xl:ml-64 h-[calc(100vh-64px)] mt-16 bg-gray-50 overflow-y-auto #{@class}"}>
+      <%= render_slot(@inner_block) %>
+    </main>
+    """
   end
 end

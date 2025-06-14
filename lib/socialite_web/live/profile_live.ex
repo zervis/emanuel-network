@@ -5,37 +5,129 @@ defmodule SocialiteWeb.ProfileLive do
   alias Socialite.Posts
   alias Socialite.KudosContext
   alias Socialite.FollowContext
+  alias Socialite.Groups
+  alias Socialite.User
+  alias Socialite.Tags
 
   @impl true
-  def mount(%{"user_id" => user_id}, session, socket) do
+  def mount(%{"id" => id} = params, session, socket) do
+    mount_profile(id, session, socket)
+  end
+
+  def mount(%{"user_id" => user_id} = params, session, socket) do
+    mount_profile(user_id, session, socket)
+  end
+
+  defp mount_profile(id, session, socket) do
     current_user_id = session["current_user_id"]
 
     # Safely get both users from database
-    with %Socialite.User{} = current_user <- Socialite.Repo.get(Socialite.User, current_user_id),
-         %Socialite.User{} = profile_user <- Socialite.Repo.get(Socialite.User, user_id) do
+    with %User{} = current_user <- Socialite.Repo.get(User, current_user_id),
+         %User{} = profile_user <- Socialite.Repo.get(User, id) do
 
-      # Get user's posts
-      posts = Posts.list_user_posts(user_id)
+      # Get user's pictures
+      user_pictures = Accounts.list_user_pictures(profile_user.id)
 
-      # Reset daily credits if needed and get updated current user
-      updated_current_user = KudosContext.reset_daily_credits_if_needed(current_user)
+      # Get user's joined groups
+      joined_groups = Groups.get_user_groups(profile_user.id)
 
-      # Check if current user is following the profile user
-      is_following = FollowContext.following?(current_user.id, profile_user.id)
+      # Get user's upcoming events
+      upcoming_events = Groups.get_user_upcoming_events(profile_user.id)
 
-      {:ok, assign(socket,
-        current_user: updated_current_user,
-        profile_user: profile_user,
-        posts: posts,
-        is_own_profile: current_user.id == profile_user.id,
-        is_following: is_following,
-        kudos_amount: 1
-      )}
+      # Calculate distance between users if both have location data
+      distance = calculate_distance(current_user, profile_user)
+
+      # Calculate compatibility between users (only if viewing someone else's profile)
+      compatibility = if current_user.id != profile_user.id do
+        Tags.calculate_compatibility(current_user.id, profile_user.id)
+      else
+        nil
+      end
+
+      # Get posts by this user
+      posts = Posts.list_user_posts(profile_user.id)
+
+      # Get nearby users (only for own profile)
+      nearby_users = if current_user.id == profile_user.id do
+        Accounts.find_nearby_users_for_user(current_user, 50) # 50km radius
+      else
+        []
+      end
+
+      # Check if following
+      is_following = if current_user.id != profile_user.id do
+        FollowContext.following?(current_user.id, profile_user.id)
+      else
+        false
+      end
+
+      # Get follow counts from user record
+      followers_count = profile_user.followers_count || 0
+      following_count = profile_user.following_count || 0
+
+      # Get user's tags
+      user_tags = Tags.get_user_tags_by_category(profile_user.id)
+
+      # Calculate age for the profile user
+      profile_user_with_age = %{profile_user | age: User.age(profile_user)}
+
+             {:ok,
+        socket
+        |> assign(:current_user, current_user)
+        |> assign(:profile_user, profile_user_with_age)
+        |> assign(:user_pictures, user_pictures)
+        |> assign(:user_groups, joined_groups)
+        |> assign(:upcoming_events, upcoming_events)
+        |> assign(:distance, distance)
+        |> assign(:compatibility, compatibility)
+        |> assign(:posts, posts)
+        |> assign(:nearby_users, nearby_users)
+        |> assign(:is_own_profile, current_user.id == profile_user.id)
+        |> assign(:is_following, is_following)
+        |> assign(:followers_count, followers_count)
+        |> assign(:following_count, following_count)
+        |> assign(:user_tags, user_tags)
+        |> assign(:kudos_amount, 1)}
     else
       nil ->
-        {:ok, redirect(socket, to: "/")}
+        {:ok,
+         socket
+         |> put_flash(:error, "User not found")
+         |> redirect(to: ~p"/feed")}
     end
   end
+
+  # Calculate distance between two users using Haversine formula
+  defp calculate_distance(%User{latitude: lat1, longitude: lon1}, %User{latitude: lat2, longitude: lon2})
+    when not is_nil(lat1) and not is_nil(lon1) and not is_nil(lat2) and not is_nil(lon2) do
+
+    # Convert degrees to radians
+    lat1_rad = lat1 * :math.pi() / 180
+    lon1_rad = lon1 * :math.pi() / 180
+    lat2_rad = lat2 * :math.pi() / 180
+    lon2_rad = lon2 * :math.pi() / 180
+
+    # Haversine formula
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    a = :math.sin(dlat / 2) * :math.sin(dlat / 2) +
+        :math.cos(lat1_rad) * :math.cos(lat2_rad) *
+        :math.sin(dlon / 2) * :math.sin(dlon / 2)
+
+    c = 2 * :math.atan2(:math.sqrt(a), :math.sqrt(1 - a))
+
+    # Earth's radius in kilometers
+    earth_radius = 6371
+
+    # Calculate distance
+    distance = earth_radius * c
+
+    # Round to 1 decimal place
+    Float.round(distance, 1)
+  end
+
+  defp calculate_distance(_, _), do: nil
 
   @impl true
   def handle_event("give_kudos", %{"amount" => amount_str}, socket) do

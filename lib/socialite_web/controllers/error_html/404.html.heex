@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" class="[scrollbar-gutter:stable]">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title suffix=" · Phoenix Framework">
+      <%= assigns[:page_title] || "Page Not Found" %>
+    </.live_title>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
+  </head>
+  <body class="bg-gray-50 antialiased">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <!-- Logo -->
+          <div class="flex items-center">
+            <a href="/" class="flex items-center space-x-2">
+              <img src={~p"/images/logo-icon.png"} alt="Emanuel Network" class="h-8 w-8" />
+              <span class="text-xl font-bold text-gray-900">Emanuel Network</span>
+            </a>
+          </div>
+
+          <!-- Navigation Links -->
+          <div class="hidden md:flex items-center space-x-8">
+            <a href="/" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+              Home
+            </a>
+            <a href="/terms" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+              Terms
+            </a>
+            <a href="/teaching" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+              Teaching
+            </a>
+          </div>
+
+          <!-- Login/Register Buttons -->
+          <div class="flex items-center space-x-4">
+            <button onclick="document.getElementById('loginModal').classList.remove('hidden')" 
+                    class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+              Login
+            </button>
+            <button onclick="document.getElementById('registerModal').classList.remove('hidden')" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+              Sign Up
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="min-h-screen bg-gray-50">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="text-center">
+          <!-- 404 Icon -->
+          <div class="mx-auto h-32 w-32 text-gray-400 mb-8">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-full h-full">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 11.172a4 4 0 00-5.656 0M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+
+          <!-- Error Message -->
+          <h1 class="text-6xl font-bold text-gray-900 mb-4">404</h1>
+          <h2 class="text-2xl font-semibold text-gray-700 mb-4">Page Not Found</h2>
+          <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            Sorry, we couldn't find the page you're looking for. The page might have been moved, deleted, or you might have entered the wrong URL.
+          </p>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a href="/" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+              Go Back Home
+            </a>
+            <button onclick="document.getElementById('registerModal').classList.remove('hidden')" 
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+              Join Emanuel Network
+            </button>
+          </div>
+
+          <!-- Additional Help -->
+          <div class="mt-12 text-center">
+            <p class="text-gray-600 mb-4">Need help? Here are some useful links:</p>
+            <div class="flex flex-wrap justify-center gap-6">
+              <a href="/" class="text-blue-600 hover:text-blue-800 font-medium">Home</a>
+              <a href="/terms" class="text-blue-600 hover:text-blue-800 font-medium">Terms of Use</a>
+              <a href="/teaching" class="text-blue-600 hover:text-blue-800 font-medium">Teaching</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Login to Emanuel Network</h3>
+            <button onclick="document.getElementById('loginModal').classList.add('hidden')" 
+                    class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <form action="/login" method="post" class="space-y-4">
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+              <input type="email" id="email" name="email" required 
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+            <div>
+              <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+              <input type="password" id="password" name="password" required 
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+            <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium">
+              Login
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Join Emanuel Network</h3>
+            <button onclick="document.getElementById('registerModal').classList.add('hidden')" 
+                    class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <form action="/register" method="post" class="space-y-4">
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                <input type="text" id="first_name" name="first_name" required 
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                <input type="text" id="last_name" name="last_name" required 
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+            </div>
+            <div>
+              <label for="reg_email" class="block text-sm font-medium text-gray-700">Email</label>
+              <input type="email" id="reg_email" name="email" required 
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+            <div>
+              <label for="reg_password" class="block text-sm font-medium text-gray-700">Password</label>
+              <input type="password" id="reg_password" name="password" required 
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+            <div>
+              <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+              <input type="password" id="password_confirmation" name="password_confirmation" required 
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+            <button type="submit" 
+                    class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-medium">
+              Create Account
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html> 

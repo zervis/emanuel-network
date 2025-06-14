@@ -1,0 +1,184 @@
+<div class="pt-16 min-h-screen bg-gray-50">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Search Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Search Results</h1>
+      <%= if @query != "" do %>
+        <p class="text-gray-600 mt-2">
+          Showing results for "<span class="font-semibold"><%= @query %></span>"
+        </p>
+      <% else %>
+        <p class="text-gray-600 mt-2">Enter a search term to find users and groups</p>
+      <% end %>
+    </div>
+
+    <%= if @query != "" do %>
+      <!-- Users Section -->
+      <div class="mb-8">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"></path>
+          </svg>
+          <h2 class="text-xl font-semibold text-gray-900">People</h2>
+          <span class="ml-2 text-sm text-gray-500">(<%= length(@users) %> results)</span>
+        </div>
+
+        <%= if length(@users) > 0 do %>
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <%= for user <- @users do %>
+              <a href={~p"/users/#{user.id}"} class="block">
+                <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                  <div class="flex items-center space-x-3">
+                    <img
+                      src={Socialite.User.avatar_url(user)}
+                      alt="Avatar"
+                      class="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                    />
+                                         <div class="flex-1 min-w-0">
+                       <p class="text-sm font-medium text-gray-900 truncate">
+                         <%= user.first_name %> <%= user.last_name %>
+                       </p>
+                       <div class="flex items-center space-x-3 mt-1">
+                         <%= if user.distance_km do %>
+                           <p class="text-sm text-blue-600 font-medium">
+                             <%= user.distance_km %> km away
+                           </p>
+                         <% else %>
+                           <p class="text-sm text-gray-500">
+                             Location not available
+                           </p>
+                         <% end %>
+                       </div>
+                       
+                       <!-- Compatibility Bar -->
+                       <%= if user.compatibility && user.compatibility > 0 do %>
+                         <div class="flex items-center space-x-2 mt-2">
+                           <span class="text-xs text-gray-500">Compatibility:</span>
+                           <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                             <div 
+                               class={[
+                                 "h-full rounded-full",
+                                 if(user.compatibility >= 70, do: "bg-green-500", else: if(user.compatibility >= 40, do: "bg-yellow-500", else: "bg-red-500"))
+                               ]}
+                               style={"width: #{user.compatibility}%"}
+                             ></div>
+                           </div>
+                                                       <span class={[
+                              "text-xs font-medium",
+                              if(user.compatibility >= 70, do: "text-green-600", else: if(user.compatibility >= 40, do: "text-yellow-600", else: "text-red-600"))
+                            ]}>
+                             <%= user.compatibility %>%
+                           </span>
+                         </div>
+                       <% end %>
+                     </div>
+                  </div>
+                </div>
+              </a>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8 text-gray-500">
+            <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            <p>No people found matching "<%= @query %>"</p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Groups Section -->
+      <div class="mb-8">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+          <h2 class="text-xl font-semibold text-gray-900">Groups</h2>
+          <span class="ml-2 text-sm text-gray-500">(<%= length(@groups) %> results)</span>
+        </div>
+
+        <%= if length(@groups) > 0 do %>
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <%= for group <- @groups do %>
+              <a href={~p"/groups/#{group.id}"} class="block">
+                <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                  <div class="flex items-start space-x-3">
+                    <%= if group.avatar do %>
+                      <img
+                        src={group.avatar}
+                        alt="Group avatar"
+                        class="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                      />
+                    <% else %>
+                      <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                      </div>
+                    <% end %>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900 truncate">
+                        <%= group.name %>
+                      </p>
+                      <%= if group.description do %>
+                        <p class="text-sm text-gray-500 line-clamp-2 mt-1">
+                          <%= group.description %>
+                        </p>
+                      <% end %>
+                                             <div class="flex items-center justify-between mt-2 text-xs">
+                         <div class="flex items-center text-gray-400">
+                           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"></path>
+                           </svg>
+                           <%= group.members_count %> members
+                         </div>
+                         <%= if group.distance_km do %>
+                           <span class="text-blue-600 font-medium">
+                             <%= group.distance_km %> km away
+                           </span>
+                         <% end %>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8 text-gray-500">
+            <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+            <p>No groups found matching "<%= @query %>"</p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- No Results -->
+      <%= if length(@users) == 0 and length(@groups) == 0 do %>
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No results found</h3>
+          <p class="text-gray-500">
+            We couldn't find any people or groups matching "<%= @query %>".
+            <br />
+            Try different keywords or check your spelling.
+          </p>
+        </div>
+      <% end %>
+    <% else %>
+      <!-- Empty State -->
+      <div class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Start searching</h3>
+        <p class="text-gray-500">
+          Use the search bar above to find people and groups on Socialite.
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div> 

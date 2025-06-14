@@ -31,6 +31,29 @@ Hooks.SliderHook = {
   }
 }
 
+Hooks.LocationGetter = {
+  mounted() {
+    this.el.addEventListener('click', () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            this.pushEvent('set_location', {
+              latitude: position.coords.latitude.toString(),
+              longitude: position.coords.longitude.toString()
+            });
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+            alert('Error getting location: ' + error.message);
+          }
+        );
+      } else {
+        alert('Geolocation is not supported by this browser.');
+      }
+    });
+  }
+}
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

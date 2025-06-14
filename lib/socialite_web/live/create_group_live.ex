@@ -9,7 +9,32 @@ defmodule SocialiteWeb.CreateGroupLive do
 
     if current_user_id do
       current_user = Socialite.Accounts.get_user!(current_user_id)
-      changeset = Groups.change_group(%Group{}, %{"creator_id" => current_user.id})
+
+      # Pre-populate group with user's location data
+      initial_params = %{
+        "creator_id" => current_user.id
+      }
+
+      # Add location data if user has it
+      initial_params = if current_user.latitude != nil and current_user.longitude != nil do
+        location_data = %{
+          "lat" => current_user.latitude,
+          "lng" => current_user.longitude
+        }
+
+        # Add address if available
+        location_data = if current_user.address && String.trim(current_user.address) != "" do
+          Map.put(location_data, "address", current_user.address)
+        else
+          location_data
+        end
+
+        Map.merge(initial_params, location_data)
+      else
+        initial_params
+      end
+
+      changeset = Groups.change_group(%Group{}, initial_params)
 
       socket =
         socket
@@ -57,5 +82,24 @@ defmodule SocialiteWeb.CreateGroupLive do
          |> assign(:group_changeset, changeset)
          |> assign(:form, to_form(changeset))}
     end
+  end
+
+  def handle_event("set_location", %{"latitude" => lat, "longitude" => lng}, socket) do
+    # Update the form with current location
+    current_params = socket.assigns.group_changeset.params || %{}
+    updated_params = Map.merge(current_params, %{
+      "lat" => String.to_float(lat),
+      "lng" => String.to_float(lng)
+    })
+
+    changeset =
+      %Group{}
+      |> Groups.change_group(updated_params)
+
+    {:noreply,
+     socket
+     |> assign(:group_changeset, changeset)
+     |> assign(:form, to_form(changeset))
+     |> put_flash(:info, "Location updated with current coordinates!")}
   end
 end

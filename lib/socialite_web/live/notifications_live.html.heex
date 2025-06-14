@@ -1,0 +1,77 @@
+<div class="max-w-2xl mx-auto">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h1 class="text-xl font-semibold text-gray-900">Notifications</h1>
+      <%= if @unread_count > 0 do %>
+        <button 
+          phx-click="mark_all_read" 
+          class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+        >
+          Mark all as read
+        </button>
+      <% end %>
+    </div>
+    
+    <%= if @unread_count > 0 do %>
+      <div class="px-6 py-3 bg-blue-50 border-b border-gray-200">
+        <p class="text-sm text-blue-700">
+          You have <%= @unread_count %> unread notification<%= if @unread_count != 1, do: "s" %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Notifications List -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <%= if Enum.empty?(@notifications) do %>
+      <div class="px-6 py-12 text-center">
+        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
+        <p class="text-gray-500">You're all caught up! Check back later for new notifications.</p>
+      </div>
+    <% else %>
+      <div class="divide-y divide-gray-200">
+        <%= for notification <- @notifications do %>
+          <div class={[
+            "px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer",
+            if(is_nil(notification.read_at), do: "bg-blue-50", else: "")
+          ]} phx-click="mark_read" phx-value-id={notification.id}>
+            <div class="flex items-start gap-4">
+              <img 
+                src={Socialite.User.avatar_url(notification.actor)} 
+                alt="Profile" 
+                class="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900 leading-relaxed">
+                      <%= notification.message %>
+                    </p>
+                    <div class="flex items-center gap-2 mt-2">
+                      <span class={[
+                        "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+                        notification_type_class(notification.type)
+                      ]}>
+                        <%= notification_type_label(notification.type) %>
+                      </span>
+                      <span class="text-xs text-gray-500">
+                        <%= time_ago(notification.inserted_at) %>
+                      </span>
+                    </div>
+                  </div>
+                  <%= if is_nil(notification.read_at) do %>
+                    <div class="w-3 h-3 bg-blue-600 rounded-full flex-shrink-0 ml-4"></div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div> 

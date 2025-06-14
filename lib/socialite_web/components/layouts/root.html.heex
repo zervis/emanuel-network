@@ -4,14 +4,78 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Socialite" suffix=" · Phoenix Framework">
+    <.live_title default="Emanuel.Network" suffix=" · Christian Universalits Online Community">
       {assigns[:page_title]}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
+    <script>
+      function toggleUserMenu() {
+        const dropdown = document.getElementById('user-dropdown');
+        dropdown.classList.toggle('hidden');
+      }
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(event) {
+        const userMenu = document.getElementById('user-menu');
+        const userDropdown = document.getElementById('user-dropdown');
+        
+        if (userMenu && userDropdown && !userMenu.contains(event.target)) {
+          userDropdown.classList.add('hidden');
+        }
+      });
+
+      // Sidebar toggle functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        const sidebarToggle = document.getElementById('root-sidebar-toggle');
+        const sidebar = document.getElementById('root-site__sidebar');
+        const overlay = document.getElementById('root-site__sidebar__overlay');
+        
+        if (sidebarToggle && sidebar && overlay) {
+          sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('max-xl:-translate-x-full');
+            overlay.classList.toggle('hidden');
+          });
+          
+          overlay.addEventListener('click', function() {
+            sidebar.classList.add('max-xl:-translate-x-full');
+            overlay.classList.add('hidden');
+          });
+        }
+      });
+    </script>
   </head>
   <body class="bg-white">
-    {@inner_content}
+    <%= if @current_user do %>
+      <!-- Navigation (only for authenticated users) -->
+      <.navigation 
+        current_user={@current_user} 
+        notifications_count={@notifications_count} 
+        messages_count={@messages_count} 
+        conn={@conn} 
+      />
+      
+      <!-- Sidebar (only for authenticated users) -->
+      <.sidebar 
+        current_user={@current_user} 
+        current_path={@conn.request_path}
+        unread_notifications_count={@notifications_count}
+        unread_messages_count={@messages_count}
+        friends_list={@friends_list}
+      />
+      
+      <!-- Main Content with navigation and sidebar -->
+      <.main_content>
+        <.flash_group flash={@flash} />
+        {@inner_content}
+      </.main_content>
+    <% else %>
+      <!-- Main Content without navigation and sidebar for unauthenticated users -->
+      <main class="w-full">
+        <.flash_group flash={@flash} />
+        {@inner_content}
+      </main>
+    <% end %>
   </body>
 </html>

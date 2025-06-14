@@ -101,8 +101,9 @@ defmodule Socialite.Content do
     # Sort by inserted_at or start_time for events
     # Convert NaiveDateTime to DateTime for comparison
     Enum.sort_by(all_content, fn
-      %Socialite.GroupEvent{start_time: start_time} ->
-        start_time
+      %Socialite.GroupEvent{inserted_at: inserted_at} ->
+        # Convert NaiveDateTime to DateTime assuming UTC
+        DateTime.from_naive!(inserted_at, "Etc/UTC")
       %{inserted_at: inserted_at} ->
         # Convert NaiveDateTime to DateTime assuming UTC
         DateTime.from_naive!(inserted_at, "Etc/UTC")

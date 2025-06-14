@@ -120,12 +120,12 @@ defmodule SocialiteWeb.MessagesLive do
   end
 
   @impl true
-  def handle_event("update_message", %{"message" => message}, socket) do
-    {:noreply, assign(socket, new_message: message)}
+  def handle_event("update_message", %{"content" => content}, socket) do
+    {:noreply, assign(socket, new_message: content)}
   end
 
   @impl true
-  def handle_event("send_message", %{"message" => content}, socket) do
+  def handle_event("send_message", %{"content" => content}, socket) do
     content = String.trim(content)
 
     if content != "" and socket.assigns.active_conversation do

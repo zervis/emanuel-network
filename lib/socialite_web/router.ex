@@ -8,6 +8,7 @@ defmodule SocialiteWeb.Router do
     plug :put_root_layout, html: {SocialiteWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug SocialiteWeb.Plugs.AssignCurrentUser
   end
 
   pipeline :api do
@@ -18,21 +19,31 @@ defmodule SocialiteWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    get "/feed", PageController, :feed
+    get "/terms", PageController, :terms
+    get "/teaching", PageController, :teaching
+    live "/feed", FeedLive
     get "/profile", PageController, :profile
+    get "/search", PageController, :search
+    live "/tags", TagsLive, :index
     get "/clear-session", PageController, :clear_session
     live "/users/:user_id", ProfileLive, :show
     live "/profile/:user_id", ProfileLive, :show
     live "/messages", MessagesLive, :index
     live "/messages/:user_id", MessagesLive, :conversation
-    get "/friends", PageController, :friends
+    live "/friends", FriendsLive, :index
+    live "/leaderboard", LeaderboardLive, :index
     live "/groups", GroupsLive, :index
     live "/groups/new", CreateGroupLive, :new
     live "/groups/:group_id", GroupLive, :show
+    live "/groups/:group_id/events/new", CreateEventLive, :new
     live "/events", EventsLive, :index
+    live "/events/:id", EventLive, :show
     live "/events/new", CreateEventLive, :new
+    live "/settings", SettingsLive, :index
+    live "/notifications", NotificationsLive, :index
     post "/login", PageController, :login
     post "/register", PageController, :register
+    get "/logout", PageController, :logout
     post "/posts", PageController, :create_post
     post "/posts/:post_id/comments", PageController, :create_comment
   end
