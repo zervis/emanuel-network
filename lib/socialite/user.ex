@@ -45,6 +45,8 @@ defmodule Socialite.User do
 
     has_many :posts, Socialite.Post
     has_many :comments, Socialite.Comment
+    has_many :post_likes, Socialite.PostLike
+    has_many :liked_posts, through: [:post_likes, :post]
     has_many :sent_messages, Socialite.Message, foreign_key: :sender_id
     has_many :received_messages, Socialite.Message, foreign_key: :recipient_id
     has_many :given_kudos, Socialite.Kudos, foreign_key: :giver_id

@@ -244,17 +244,35 @@
               <% end %>
           <% end %>
           
-          <!-- post icons - only for Posts and GroupPosts, not GroupEvents -->
-          <%= if post.__struct__ != Socialite.GroupEvent do %>
+          <!-- post icons - only for regular Posts, not GroupPosts or GroupEvents -->
+          <%= if post.__struct__ == Socialite.Post do %>
             <div class="sm:p-4 p-2.5 flex items-center gap-4 text-xs font-semibold">
               <div>
                 <div class="flex items-center gap-2.5">
-                  <button type="button" class="w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center"> 
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                  <a href="#" class="text-gray-600"><%= Map.get(post, :likes_count, 0) %></a>
+                  <%= if user_liked_post?(post, @current_user.id) do %>
+                    <button 
+                      type="button" 
+                      phx-click="toggle_like" 
+                      phx-value-post_id={post.id}
+                      class="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-red-100 text-red-500"
+                    > 
+                      <svg class="w-4 h-4" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                    </button>
+                  <% else %>
+                    <button 
+                      type="button" 
+                      phx-click="toggle_like" 
+                      phx-value-post_id={post.id}
+                      class="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500"
+                    > 
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                    </button>
+                  <% end %>
+                  <span class="text-gray-600"><%= Map.get(post, :likes_count, 0) %></span>
                 </div>
               </div>
               <div class="flex items-center gap-3">
@@ -273,8 +291,39 @@
             </div>
           <% end %>
 
-          <!-- add comment - only for Posts and GroupPosts, not GroupEvents -->
-          <%= if post.__struct__ != Socialite.GroupEvent do %>
+          <!-- add comment - only for regular Posts, not GroupPosts or GroupEvents -->
+          <%= if post.__struct__ == Socialite.Post do %>
+            <!-- Comments Section -->
+            <%= if length(Map.get(post, :comments, [])) > 0 do %>
+              <div class="sm:px-4 px-2.5 py-3 border-t border-gray-100">
+                <div class="space-y-3">
+                  <%= for comment <- Map.get(post, :comments, []) do %>
+                    <div class="flex items-start space-x-3">
+                      <!-- Comment User Avatar -->
+                      <a href={~p"/users/#{comment.user.id}"} class="flex-shrink-0">
+                        <img src={Socialite.User.avatar_url(comment.user)} alt="" class="w-8 h-8 rounded-full">
+                      </a>
+                      
+                      <!-- Comment Content -->
+                      <div class="flex-1 min-w-0">
+                        <div class="bg-gray-50 rounded-lg px-3 py-2">
+                          <div class="flex items-center justify-between mb-1">
+                            <a href={~p"/users/#{comment.user.id}"} class="text-sm font-semibold text-gray-900 hover:text-blue-600">
+                              <%= Socialite.User.full_name(comment.user) %>
+                            </a>
+                            <span class="text-xs text-gray-500">
+                              <%= Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p") %>
+                            </span>
+                          </div>
+                          <p class="text-sm text-gray-700"><%= comment.content %></p>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
             <div class="sm:px-4 sm:py-3 p-2.5 border-t border-gray-100">
               <form action={~p"/posts/#{post.id}/comments"} method="post" class="flex items-center gap-1">
                 <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()}>

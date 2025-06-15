@@ -118,6 +118,22 @@ defmodule SocialiteWeb.FeedLive do
     {:noreply, cancel_upload(socket, :image, ref)}
   end
 
+  @impl true
+  def handle_event("toggle_like", %{"post_id" => post_id}, socket) do
+    current_user = socket.assigns.current_user
+    post_id = String.to_integer(post_id)
+
+    case Socialite.Posts.toggle_like(current_user.id, post_id) do
+      {:ok, _action} ->
+        # Refresh posts to show updated like count and status
+        posts = Content.list_feed_posts(current_user.id)
+        {:noreply, assign(socket, :posts, posts)}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to update like. Please try again.")}
+    end
+  end
+
   defp handle_progress(:image, entry, socket) do
     if entry.done? do
       # File upload completed
@@ -149,6 +165,10 @@ defmodule SocialiteWeb.FeedLive do
       select: u
     )
     |> Socialite.Repo.all()
+  end
+
+  defp user_liked_post?(post, user_id) do
+    Enum.any?(Map.get(post, :post_likes, []), fn like -> like.user_id == user_id end)
   end
 
   defp calculate_profile_completion(user) do

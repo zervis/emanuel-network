@@ -207,4 +207,24 @@ defmodule SocialiteWeb.ProfileLive do
         {:noreply, put_flash(socket, :error, error_message)}
     end
   end
+
+  @impl true
+  def handle_event("toggle_like", %{"post_id" => post_id}, socket) do
+    current_user = socket.assigns.current_user
+    post_id = String.to_integer(post_id)
+
+    case Posts.toggle_like(current_user.id, post_id) do
+      {:ok, _action} ->
+        # Refresh posts to show updated like count and status
+        posts = Posts.list_user_posts(socket.assigns.profile_user.id)
+        {:noreply, assign(socket, :posts, posts)}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to update like. Please try again.")}
+    end
+  end
+
+  defp user_liked_post?(post, user_id) do
+    Enum.any?(Map.get(post, :post_likes, []), fn like -> like.user_id == user_id end)
+  end
 end

@@ -9,6 +9,8 @@ defmodule Socialite.Post do
 
     belongs_to :user, Socialite.User
     has_many :comments, Socialite.Comment
+    has_many :post_likes, Socialite.PostLike
+    has_many :liked_by_users, through: [:post_likes, :user]
 
     timestamps()
   end

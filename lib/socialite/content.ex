@@ -5,7 +5,7 @@ defmodule Socialite.Content do
 
   import Ecto.Query, warn: false
   alias Socialite.Repo
-  alias Socialite.{Post, Comment, User}
+  alias Socialite.{Post, Comment, User, PostLike}
 
   @doc """
   Returns the list of posts with users and comments preloaded, ordered by newest first.
@@ -16,7 +16,9 @@ defmodule Socialite.Content do
         join: u in User, on: p.user_id == u.id,
         left_join: c in Comment, on: c.post_id == p.id,
         left_join: cu in User, on: c.user_id == cu.id,
-        preload: [user: u, comments: {c, user: cu}],
+        left_join: pl in PostLike, on: pl.post_id == p.id,
+        left_join: plu in User, on: pl.user_id == plu.id,
+        preload: [user: u, comments: {c, user: cu}, post_likes: {pl, user: plu}],
         order_by: [desc: p.inserted_at]
     )
   end
@@ -33,8 +35,10 @@ defmodule Socialite.Content do
         left_join: f in Socialite.Follow, on: f.followed_id == p.user_id and f.follower_id == ^user_id,
         left_join: c in Comment, on: c.post_id == p.id,
         left_join: cu in User, on: c.user_id == cu.id,
+        left_join: pl in PostLike, on: pl.post_id == p.id,
+        left_join: plu in User, on: pl.user_id == plu.id,
         where: p.user_id == ^user_id or not is_nil(f.id),
-        preload: [user: u, comments: {c, user: cu}],
+        preload: [user: u, comments: {c, user: cu}, post_likes: {pl, user: plu}],
         order_by: [desc: p.inserted_at]
     )
 
@@ -77,8 +81,10 @@ defmodule Socialite.Content do
             join: u in User, on: p.user_id == u.id,
             left_join: c in Comment, on: c.post_id == p.id,
             left_join: cu in User, on: c.user_id == cu.id,
+            left_join: pl in PostLike, on: pl.post_id == p.id,
+            left_join: plu in User, on: pl.user_id == plu.id,
             where: p.user_id == ^official_user.id,
-            preload: [user: u, comments: {c, user: cu}],
+            preload: [user: u, comments: {c, user: cu}, post_likes: {pl, user: plu}],
             order_by: [asc: p.inserted_at],
             limit: 1
         )
@@ -115,7 +121,7 @@ defmodule Socialite.Content do
   """
   def get_post!(id) do
     Repo.get!(Post, id)
-    |> Repo.preload([:user, comments: :user])
+    |> Repo.preload([:user, comments: :user, post_likes: :user])
   end
 
   @doc """
