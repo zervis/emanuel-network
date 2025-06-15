@@ -1,33 +1,39 @@
-app = "emanuel-network"
-kill_signal = "SIGTERM"
-primary_region = "waw"
+# fly.toml app configuration file generated for emanuel-network on 2025-06-15T03:57:02+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'emanuel-network'
+primary_region = 'waw'
+kill_signal = 'SIGTERM'
+
+[build]
 
 [deploy]
-release_command = "/app/bin/migrate"
+  release_command = '/app/bin/migrate'
 
 [env]
-PHX_HOST = "emanuel-network.fly.dev"
-PORT = "8080"
+  PHX_HOST = 'emanuel-network.fly.dev'
+  PORT = '8080'
+
+[[mounts]]
+  source = 'uploads_data'
+  destination = '/app/priv/static/uploads'
 
 [http_service]
-auto_start_machines = true
-auto_stop_machines = true
-force_https = true
-internal_port = 8_080
-min_machines_running = 0
-processes = [ "app" ]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
   [http_service.concurrency]
-  hard_limit = 1_000
-  soft_limit = 1_000
-  type = "connections"
-
-[mounts]
-source = "uploads_data"
-destination = "/app/uploads"
+    type = 'connections'
+    hard_limit = 1000
+    soft_limit = 1000
 
 [[vm]]
-cpu_kind = "shared"
-cpus = 1
-memory = "1gb"
-memory_mb = 2_048
+  memory = '2gb'
+  cpu_kind = 'shared'
+  cpus = 1
