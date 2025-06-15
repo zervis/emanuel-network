@@ -8,7 +8,7 @@ defmodule SocialiteWeb.GroupLive do
     current_user_id = session["current_user_id"]
 
     # Safely get user and group from database
-    with %Socialite.User{} = current_user <- Socialite.Repo.get(Socialite.User, current_user_id),
+    with %Socialite.Accounts.User{} = current_user <- Socialite.Repo.get(Socialite.Accounts.User, current_user_id),
          %Socialite.Group{} = group <- Groups.get_group!(group_id) do
 
       # Get group posts, events, and members

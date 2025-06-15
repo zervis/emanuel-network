@@ -10,6 +10,12 @@ defmodule Socialite.Accounts.User do
     field :last_name, :string
     field :avatar, :string
     field :bio, :string
+    field :is_active, :boolean, default: true
+    field :kudos_count, :integer, default: 0
+    field :daily_kudos_credits, :integer, default: 100
+    field :last_credits_reset, :date
+    field :followers_count, :integer, default: 0
+    field :following_count, :integer, default: 0
     field :gender, :string
     field :relationship_status, :string
     field :personality_type, :string
@@ -138,6 +144,18 @@ defmodule Socialite.Accounts.User do
     |> cast(attrs, [:password])
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
+  end
+
+  def kudos_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:kudos_count])
+    |> validate_required([:kudos_count])
+  end
+
+  def credits_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:daily_kudos_credits, :last_credits_reset])
+    |> validate_required([:daily_kudos_credits, :last_credits_reset])
   end
 
   def changeset(user, attrs) do

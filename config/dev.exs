@@ -83,3 +83,28 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Configure mailer for development with SMTP
+# Using Gmail SMTP as example - replace with your email provider settings
+config :socialite, Socialite.Mailer,
+  adapter: Swoosh.Adapters.SMTP,
+  relay: "smtp.gmail.com",
+  port: 587,
+  username: System.get_env("SMTP_USERNAME") || "emanuel.network.email@gmail.com",
+  password: System.get_env("SMTP_PASSWORD") || "No1oczko!",
+  tls: :if_available,
+  allowed_tls_versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"],
+  ssl: false,
+  retries: 1,
+  no_mx_lookups: false,
+  auth: :always
+
+# Configure AWS S3 for development
+# For local development without AWS credentials, files will be stored locally
+# Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to use S3
+config :socialite, :file_storage,
+  adapter: if(System.get_env("AWS_ACCESS_KEY_ID"), do: :s3, else: :local),
+  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
+  bucket: System.get_env("AWS_S3_BUCKET") || "emanuel-network",
+  region: System.get_env("AWS_REGION") || "auto",
+  local_path: "priv/static/uploads"

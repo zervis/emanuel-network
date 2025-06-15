@@ -5,7 +5,7 @@ defmodule Socialite.Content do
 
   import Ecto.Query, warn: false
   alias Socialite.Repo
-  alias Socialite.{Post, Comment, User, PostLike}
+  alias Socialite.{Post, Comment, User, PostLike, GroupPost, GroupEvent, GroupMember, Group, GroupPostComment}
 
   @doc """
   Returns the list of posts with users and comments preloaded, ordered by newest first.
@@ -44,26 +44,24 @@ defmodule Socialite.Content do
 
     # Get group posts from groups the user has joined
     group_posts = Repo.all(
-      from gp in Socialite.GroupPost,
-        join: gm in Socialite.GroupMember, on: gm.group_id == gp.group_id and gm.user_id == ^user_id,
+      from gp in GroupPost,
+        join: gm in GroupMember, on: gm.group_id == gp.group_id and gm.user_id == ^user_id,
         join: u in User, on: gp.user_id == u.id,
-        join: g in Socialite.Group, on: gp.group_id == g.id,
-        left_join: c in Socialite.GroupPostComment, on: c.group_post_id == gp.id,
+        join: g in Group, on: gp.group_id == g.id,
+        left_join: c in GroupPostComment, on: c.group_post_id == gp.id,
         left_join: cu in User, on: c.user_id == cu.id,
         preload: [user: u, group: g, group_post_comments: {c, user: cu}],
         order_by: [desc: gp.inserted_at]
     )
 
     # Get upcoming group events from groups the user has joined
-    now = DateTime.utc_now()
     group_events = Repo.all(
-      from ge in Socialite.GroupEvent,
-        join: gm in Socialite.GroupMember, on: gm.group_id == ge.group_id and gm.user_id == ^user_id,
+      from ge in GroupEvent,
+        join: gm in GroupMember, on: gm.group_id == ge.group_id and gm.user_id == ^user_id,
         join: u in User, on: ge.user_id == u.id,
-        join: g in Socialite.Group, on: ge.group_id == g.id,
-        where: ge.start_time > ^now,
+        join: g in Group, on: ge.group_id == g.id,
         preload: [user: u, group: g],
-        order_by: [asc: ge.start_time],
+        order_by: [desc: ge.inserted_at],
         limit: 10
     )
 
@@ -104,10 +102,10 @@ defmodule Socialite.Content do
     # Combine all content and sort by date
     all_content = posts ++ group_posts ++ group_events ++ official_posts
 
-    # Sort by inserted_at or start_time for events
+    # Sort by inserted_at for all content types (posts, group posts, and events)
     # Convert NaiveDateTime to DateTime for comparison
     Enum.sort_by(all_content, fn
-      %Socialite.GroupEvent{inserted_at: inserted_at} ->
+      %GroupEvent{inserted_at: inserted_at} ->
         # Convert NaiveDateTime to DateTime assuming UTC
         DateTime.from_naive!(inserted_at, "Etc/UTC")
       %{inserted_at: inserted_at} ->
@@ -186,5 +184,59 @@ defmodule Socialite.Content do
   """
   def change_comment(%Comment{} = comment, attrs \\ %{}) do
     Comment.changeset(comment, attrs)
+  end
+
+  @doc """
+  Returns all content created by a specific user - includes regular posts, group posts, and events they created.
+  """
+  def list_user_content(user_id) do
+    # Get regular posts by the user
+    posts = Repo.all(
+      from p in Post,
+        join: u in User, on: p.user_id == u.id,
+        left_join: c in Comment, on: c.post_id == p.id,
+        left_join: cu in User, on: c.user_id == cu.id,
+        left_join: pl in PostLike, on: pl.post_id == p.id,
+        left_join: plu in User, on: pl.user_id == plu.id,
+        where: p.user_id == ^user_id,
+        preload: [user: u, comments: {c, user: cu}, post_likes: {pl, user: plu}],
+        order_by: [desc: p.inserted_at]
+    )
+
+    # Get group posts created by the user
+    group_posts = Repo.all(
+      from gp in GroupPost,
+        join: u in User, on: gp.user_id == u.id,
+        join: g in Group, on: gp.group_id == g.id,
+        left_join: c in GroupPostComment, on: c.group_post_id == gp.id,
+        left_join: cu in User, on: c.user_id == cu.id,
+        where: gp.user_id == ^user_id,
+        preload: [user: u, group: g, group_post_comments: {c, user: cu}],
+        order_by: [desc: gp.inserted_at]
+    )
+
+    # Get events created by the user
+    user_events = Repo.all(
+      from ge in GroupEvent,
+        join: u in User, on: ge.user_id == u.id,
+        join: g in Group, on: ge.group_id == g.id,
+        where: ge.user_id == ^user_id,
+        preload: [user: u, group: g],
+        order_by: [desc: ge.inserted_at]
+    )
+
+    # Combine all content and sort by date
+    all_content = posts ++ group_posts ++ user_events
+
+    # Sort by inserted_at for all content types (posts, group posts, and events)
+    # Convert NaiveDateTime to DateTime for comparison
+    Enum.sort_by(all_content, fn
+      %GroupEvent{inserted_at: inserted_at} ->
+        # Convert NaiveDateTime to DateTime assuming UTC
+        DateTime.from_naive!(inserted_at, "Etc/UTC")
+      %{inserted_at: inserted_at} ->
+        # Convert NaiveDateTime to DateTime assuming UTC
+        DateTime.from_naive!(inserted_at, "Etc/UTC")
+    end, {:desc, DateTime})
   end
 end

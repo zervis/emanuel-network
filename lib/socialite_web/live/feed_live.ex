@@ -2,7 +2,8 @@ defmodule SocialiteWeb.FeedLive do
   use SocialiteWeb, :live_view
   import Ecto.Query
 
-  alias Socialite.{Content, Accounts, Groups, User}
+  alias Socialite.{Content, Accounts, Groups}
+  alias Socialite.Accounts.User, as: AccountsUser
 
   @impl true
   def mount(_params, session, socket) do
@@ -10,8 +11,8 @@ defmodule SocialiteWeb.FeedLive do
 
     if current_user_id do
       # Safely get user from database
-      case Socialite.Repo.get(User, current_user_id) do
-        %User{} = current_user ->
+      case Accounts.get_user(current_user_id) do
+        %AccountsUser{} = current_user ->
           # Get posts from database - include posts from followed users
           posts = Content.list_feed_posts(current_user_id)
 
@@ -73,12 +74,16 @@ defmodule SocialiteWeb.FeedLive do
       {[_entry], []} ->
         # File uploaded successfully, get the URL
         [url] = consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
-          # Here you would typically upload to a cloud service like S3
-          # For now, we'll copy to a local directory
-          dest = Path.join(["priv", "static", "uploads", "#{entry.uuid}.#{get_file_extension(entry.client_name)}"])
-          File.mkdir_p!(Path.dirname(dest))
-          File.cp!(path, dest)
-          {:ok, "/uploads/#{entry.uuid}.#{get_file_extension(entry.client_name)}"}
+          # Generate a unique filename with proper extension
+          extension = Socialite.FileUpload.get_extension(entry.client_name)
+          filename = Socialite.FileUpload.generate_filename(current_user.id, extension)
+          content_type = Socialite.FileUpload.get_content_type(extension)
+
+          # Upload using the FileUpload service (S3 or local)
+          case Socialite.FileUpload.upload_file(path, filename, content_type) do
+            {:ok, url} -> url
+            {:error, reason} -> raise "Upload failed: #{reason}"
+          end
         end)
         url
       _ ->
@@ -143,13 +148,6 @@ defmodule SocialiteWeb.FeedLive do
     end
   end
 
-  defp get_file_extension(filename) do
-    filename
-    |> Path.extname()
-    |> String.trim_leading(".")
-    |> String.downcase()
-  end
-
   defp error_to_string(:too_large), do: "File is too large (max 5MB)"
   defp error_to_string(:too_many_files), do: "Too many files selected"
   defp error_to_string(:not_accepted), do: "File type not supported"
@@ -157,8 +155,8 @@ defmodule SocialiteWeb.FeedLive do
 
   # Helper functions from PageController
   defp get_user_friends(user_id) do
-    # Get users who follow each other (mutual follows)
-    from(u in User,
+    # Get users who follow each other (mutual follows) using AccountsUser schema
+    from(u in AccountsUser,
       join: f1 in Socialite.Follow, on: f1.followed_id == u.id and f1.follower_id == ^user_id,
       join: f2 in Socialite.Follow, on: f2.follower_id == u.id and f2.followed_id == ^user_id,
       where: u.id != ^user_id,

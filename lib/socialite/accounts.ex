@@ -20,6 +20,11 @@ defmodule Socialite.Accounts do
   def get_user!(id), do: Repo.get!(User, id)
 
   @doc """
+  Gets a single user, returns nil if not found.
+  """
+  def get_user(id), do: Repo.get(User, id)
+
+  @doc """
   Gets a single user by email.
   """
   def get_user_by_email(email) do
@@ -272,6 +277,16 @@ defmodule Socialite.Accounts do
   end
 
   @doc """
+  Gets a specific user picture.
+  """
+  def get_user_picture(user_id, picture_id) do
+    from(up in Socialite.UserPicture,
+      where: up.user_id == ^user_id and up.id == ^picture_id
+    )
+    |> Repo.one()
+  end
+
+  @doc """
   Sets a picture as the user's avatar.
   """
   def set_avatar_picture(user_id, picture_id) do
@@ -338,4 +353,111 @@ defmodule Socialite.Accounts do
     )
     |> Repo.one()
   end
+
+  @doc """
+  Generates a unique token for email confirmation.
+  """
+  def generate_confirmation_token do
+    :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+  end
+
+  @doc """
+  Creates a user without confirming their email and sends confirmation email.
+  """
+  def register_user(attrs \\ %{}) do
+    result = %User{}
+    |> User.registration_changeset(attrs)
+    |> Repo.insert()
+
+    case result do
+      {:ok, user} ->
+        # Send confirmation email
+        send_confirmation_email(user)
+
+        # Automatically make new users follow Bogumił Gargula
+        official_user = Repo.get_by(User, email: "bogumil@emanuel.network")
+        if official_user && user.id != official_user.id do
+          case Socialite.FollowContext.follow_user(user.id, official_user.id) do
+            {:ok, _follow} ->
+              IO.puts("New user #{user.first_name} #{user.last_name} is now following Bogumił Gargula")
+            {:error, _} ->
+              IO.puts("Failed to auto-follow Bogumił Gargula for #{user.first_name} #{user.last_name}")
+          end
+        end
+        {:ok, user}
+      error -> error
+    end
+  end
+
+  @doc """
+  Sends a confirmation email to the user.
+  """
+  def send_confirmation_email(%User{} = user) do
+    token = generate_confirmation_token()
+
+    # Store the token in the database (we'll use a simple approach with a temporary table or cache)
+    # For now, we'll use the process dictionary as a simple cache
+    # In production, you'd want to use a proper cache like Redis or a database table
+    cache_key = "email_confirmation:#{user.id}"
+    :persistent_term.put({:email_confirmation, user.id}, {token, DateTime.utc_now()})
+
+    # Send the email
+    email = Socialite.Emails.confirmation_email(user, token)
+
+    case Socialite.Mailer.deliver(email) do
+      {:ok, _} ->
+        require Logger
+        Logger.info("Email confirmation sent successfully to #{user.email}")
+        {:ok, user}
+      {:error, reason} ->
+        require Logger
+        Logger.error("Failed to send confirmation email to #{user.email}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Confirms a user's email with the provided token.
+  """
+  def confirm_user_email(user_id, token) do
+    case :persistent_term.get({:email_confirmation, user_id}, nil) do
+      {^token, created_at} ->
+        # Check if token is still valid (24 hours)
+        if DateTime.diff(DateTime.utc_now(), created_at, :hour) <= 24 do
+          user = get_user!(user_id)
+
+          case user |> User.confirm_changeset() |> Repo.update() do
+            {:ok, confirmed_user} ->
+              # Clean up the token
+              :persistent_term.erase({:email_confirmation, user_id})
+              {:ok, confirmed_user}
+            error -> error
+          end
+        else
+          {:error, :token_expired}
+        end
+      _ ->
+        {:error, :invalid_token}
+    end
+  end
+
+  @doc """
+  Resends confirmation email to a user.
+  """
+  def resend_confirmation_email(%User{confirmed_at: nil} = user) do
+    send_confirmation_email(user)
+    {:ok, user}
+  end
+
+  def resend_confirmation_email(%User{confirmed_at: confirmed_at}) when not is_nil(confirmed_at) do
+    {:error, :already_confirmed}
+  end
+
+  @doc """
+  Checks if a user's email is confirmed.
+  """
+  def email_confirmed?(%User{confirmed_at: nil}), do: false
+  def email_confirmed?(%User{confirmed_at: confirmed_at}) when not is_nil(confirmed_at), do: true
+  # Handle old Socialite.User schema for backward compatibility
+  def email_confirmed?(%Socialite.User{} = _user), do: true  # Old users are considered confirmed
 end

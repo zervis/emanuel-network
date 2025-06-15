@@ -5,9 +5,17 @@ defmodule SocialiteWeb.PageController do
   alias Socialite.Content
   alias Socialite.Groups
 
-  def home(conn, _params) do
-    # Use the standard root layout so navigation and sidebar are shown
-    render(conn, :home)
+    def home(conn, _params) do
+    # Check if user is already logged in using the assigned current_user
+    current_user = conn.assigns[:current_user]
+
+    if current_user do
+      # User is logged in, redirect to feed
+      redirect(conn, to: ~p"/feed")
+    else
+      # User is not logged in, show home page
+      render(conn, :home)
+    end
   end
 
   def feed(conn, _params) do
@@ -17,8 +25,8 @@ defmodule SocialiteWeb.PageController do
 
     if current_user_id do
       # Safely get user from database
-      case Socialite.Repo.get(Socialite.User, current_user_id) do
-        %Socialite.User{} = current_user ->
+      case Socialite.Repo.get(Socialite.Accounts.User, current_user_id) do
+        %Socialite.Accounts.User{} = current_user ->
           # Get posts from database - include posts from followed users
           posts = Content.list_feed_posts(current_user_id)
 
@@ -102,7 +110,7 @@ defmodule SocialiteWeb.PageController do
 
     # Get users who the current user follows AND who follow the current user back
     Socialite.Repo.all(
-      from u in Socialite.User,
+      from u in Socialite.Accounts.User,
         join: f1 in Socialite.Follow, on: f1.followed_id == u.id and f1.follower_id == ^user_id,
         join: f2 in Socialite.Follow, on: f2.follower_id == u.id and f2.followed_id == ^user_id,
         where: u.id != ^user_id,
@@ -145,10 +153,17 @@ defmodule SocialiteWeb.PageController do
       {:ok, user} ->
         IO.inspect(user.id, label: "LOGIN SUCCESS - User ID")
 
-        conn
-        |> put_session(:current_user_id, user.id)
-        |> put_flash(:info, "Login successful! Welcome back to Emanuel Network, #{user.first_name}!")
-        |> redirect(to: ~p"/feed")
+        conn = conn |> put_session(:current_user_id, user.id)
+
+        if Accounts.email_confirmed?(user) do
+          conn
+          |> put_flash(:info, "Login successful! Welcome back to Emanuel Network, #{user.first_name}!")
+          |> redirect(to: ~p"/feed")
+        else
+          conn
+          |> put_flash(:warning, "Please confirm your email address to access all features.")
+          |> redirect(to: ~p"/email-confirmation")
+        end
 
       {:error, :invalid_password} ->
         IO.inspect("INVALID PASSWORD", label: "LOGIN ERROR")
@@ -190,14 +205,14 @@ defmodule SocialiteWeb.PageController do
       "password_confirmation" => password_confirmation
     }
 
-    case Accounts.create_user(user_params) do
+    case Accounts.register_user(user_params) do
       {:ok, user} ->
         IO.inspect(user.id, label: "REGISTER SUCCESS - User ID")
 
         conn
         |> put_session(:current_user_id, user.id)
-        |> put_flash(:info, "Registration successful! Welcome to Emanuel Network, #{user.first_name}!")
-        |> redirect(to: ~p"/feed")
+        |> put_flash(:info, "Registration successful! Please check your email to confirm your account.")
+        |> redirect(to: ~p"/email-confirmation")
 
       {:error, %Ecto.Changeset{} = changeset} ->
         IO.inspect(changeset, label: "REGISTER ERROR - Changeset")
@@ -322,7 +337,7 @@ defmodule SocialiteWeb.PageController do
 
     if current_user_id do
       # Get current user for layout and distance calculations
-      current_user = Socialite.Repo.get!(Socialite.User, current_user_id)
+      current_user = Socialite.Repo.get!(Socialite.Accounts.User, current_user_id)
 
       # Search both users and groups with distance calculations
       users = Accounts.search_users(query, current_user_id)
@@ -354,7 +369,7 @@ defmodule SocialiteWeb.PageController do
     current_user_id = get_session(conn, :current_user_id)
 
     if current_user_id do
-      current_user = Socialite.Repo.get!(Socialite.User, current_user_id)
+      current_user = Socialite.Repo.get!(Socialite.Accounts.User, current_user_id)
 
       render(conn, :search,
         query: "",
@@ -365,6 +380,97 @@ defmodule SocialiteWeb.PageController do
     else
       conn
       |> put_flash(:error, "Please log in to search.")
+      |> redirect(to: ~p"/")
+    end
+  end
+
+  def email_confirmation(conn, _params) do
+    current_user_id = get_session(conn, :current_user_id)
+
+    if current_user_id do
+      current_user = Socialite.Repo.get!(Socialite.Accounts.User, current_user_id)
+
+      if Accounts.email_confirmed?(current_user) do
+        conn
+        |> put_flash(:info, "Your email is already confirmed!")
+        |> redirect(to: ~p"/feed")
+      else
+        render(conn, :email_confirmation, current_user: current_user)
+      end
+    else
+      conn
+      |> put_flash(:error, "Please log in first.")
+      |> redirect(to: ~p"/")
+    end
+  end
+
+  def confirm_email(conn, %{"user_id" => user_id_str, "token" => token}) do
+    case Integer.parse(user_id_str) do
+      {user_id, ""} ->
+        case Accounts.confirm_user_email(user_id, token) do
+          {:ok, user} ->
+            # Send welcome email
+            case Socialite.Emails.welcome_email(user) |> Socialite.Mailer.deliver() do
+              {:ok, _} ->
+                require Logger
+                Logger.info("Welcome email sent successfully to #{user.email}")
+              {:error, reason} ->
+                require Logger
+                Logger.error("Failed to send welcome email to #{user.email}: #{inspect(reason)}")
+            end
+
+            conn
+            |> put_flash(:info, "Email confirmed successfully! Welcome to Emanuel Network, #{user.first_name}!")
+            |> redirect(to: ~p"/feed")
+
+          {:error, :token_expired} ->
+            conn
+            |> put_flash(:error, "Confirmation link has expired. Please request a new one.")
+            |> redirect(to: ~p"/email-confirmation")
+
+          {:error, :invalid_token} ->
+            conn
+            |> put_flash(:error, "Invalid confirmation link. Please request a new one.")
+            |> redirect(to: ~p"/email-confirmation")
+
+          {:error, _} ->
+            conn
+            |> put_flash(:error, "Failed to confirm email. Please try again.")
+            |> redirect(to: ~p"/email-confirmation")
+        end
+
+      _ ->
+        conn
+        |> put_flash(:error, "Invalid confirmation link.")
+        |> redirect(to: ~p"/")
+    end
+  end
+
+  def resend_confirmation(conn, _params) do
+    current_user_id = get_session(conn, :current_user_id)
+
+    if current_user_id do
+      current_user = Socialite.Repo.get!(Socialite.Accounts.User, current_user_id)
+
+      case Accounts.resend_confirmation_email(current_user) do
+        {:ok, _user} ->
+          conn
+          |> put_flash(:info, "Confirmation email sent! Please check your inbox.")
+          |> redirect(to: ~p"/email-confirmation")
+
+        {:error, :already_confirmed} ->
+          conn
+          |> put_flash(:info, "Your email is already confirmed!")
+          |> redirect(to: ~p"/feed")
+
+        {:error, _} ->
+          conn
+          |> put_flash(:error, "Failed to send confirmation email. Please try again.")
+          |> redirect(to: ~p"/email-confirmation")
+      end
+    else
+      conn
+      |> put_flash(:error, "Please log in first.")
       |> redirect(to: ~p"/")
     end
   end

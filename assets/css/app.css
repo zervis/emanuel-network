@@ -8,6 +8,9 @@
 :root {
   --primary-color: #3b82f6; /* Blue primary color */
   --primary-hover: #2563eb;
+  --w-side: 280px; /* Sidebar width */
+  --w-side-sm: 240px; /* Small sidebar width */
+  --m-top: 60px; /* Top margin */
 }
 
 .bg-primary {
@@ -26,6 +29,16 @@
   border-color: var(--primary-color);
 }
 
+/* Secondary background */
+.bg-secondery {
+  @apply bg-gray-100;
+}
+
+/* Border utility */
+.border1 {
+  @apply border border-gray-200;
+}
+
 /* Button component styles */
 .button {
   @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
@@ -33,6 +46,33 @@
 
 .button.bg-primary {
   @apply text-white focus:ring-blue-500;
+}
+
+/* Button icon styles */
+.button-icon {
+  @apply p-2 rounded-full transition-colors;
+}
+
+/* Backdrop blur utility */
+.backdrop-blur-small {
+  backdrop-filter: blur(4px);
+}
+
+/* Dark mode support */
+.dark .bg-dark2 {
+  @apply bg-gray-800;
+}
+
+.dark .bg-dark3 {
+  @apply bg-gray-700;
+}
+
+.dark .border-slate-700 {
+  @apply border-gray-600;
+}
+
+.dark .text-white\/80 {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Form input overrides for better styling */
@@ -46,14 +86,127 @@ input[type="checkbox"] {
   @apply rounded border-gray-300 text-blue-600 focus:ring-blue-500;
 }
 
-/* Dark mode support */
-.dark .bg-primary {
-  background-color: var(--primary-color);
-}
-
 /* Custom responsive utilities */
 @media (max-width: 768px) {
   .sm\:flex {
     display: block;
+  }
+}
+
+/* Profile specific styles */
+.profile-cover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Slider styles for kudos */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-track {
+  background: #d1d5db;
+  height: 12px;
+  border-radius: 6px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #f59e0b;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]::-moz-range-track {
+  background: #d1d5db;
+  height: 12px;
+  border-radius: 6px;
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  background: #f59e0b;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+/* Box component for sidebar */
+.box {
+  @apply bg-white rounded-xl shadow-sm border;
+}
+
+/* Side list styles */
+.side-list {
+  @apply space-y-3 mt-4;
+}
+
+.side-list-item {
+  @apply flex items-center gap-3;
+}
+
+.side-list-image {
+  @apply w-10 h-10 rounded-full object-cover;
+}
+
+.side-list-title {
+  @apply font-medium text-gray-900 hover:text-blue-600;
+}
+
+.side-list-info {
+  @apply text-xs text-gray-500;
+}
+
+/* Profile tab styles */
+.profile-tab.active {
+  @apply border-blue-600 text-blue-600;
+}
+
+.profile-tab {
+  @apply border-transparent hover:text-blue-600 transition-colors;
+}
+
+/* Tab content */
+.tab-content {
+  display: block;
+}
+
+.tab-content.hidden {
+  display: none;
+}
+
+/* Dark mode support (if needed later) */
+@media (prefers-color-scheme: dark) {
+  .dark\:bg-dark2 {
+    @apply bg-gray-800;
+  }
+  
+  .dark\:bg-dark3 {
+    @apply bg-gray-700;
+  }
+  
+  .dark\:text-white {
+    @apply text-white;
+  }
+  
+  .dark\:text-white\/80 {
+    @apply text-white/80;
+  }
+  
+  .dark\:border-slate-700 {
+    @apply border-slate-700;
+  }
+  
+  .dark\:border-slate-900 {
+    @apply border-slate-900;
   }
 }

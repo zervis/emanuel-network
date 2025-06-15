@@ -11,8 +11,8 @@ defmodule SocialiteWeb.MessagesLive do
 
     if current_user_id do
       # Safely get user from database
-      case Socialite.Repo.get(Socialite.User, current_user_id) do
-        %Socialite.User{} = current_user ->
+      case Socialite.Repo.get(Socialite.Accounts.User, current_user_id) do
+        %Socialite.Accounts.User{} = current_user ->
           # Subscribe to user's message updates (only once per user)
           Phoenix.PubSub.subscribe(Socialite.PubSub, "user:#{current_user_id}")
 

@@ -180,26 +180,14 @@ defmodule SocialiteWeb.SettingsLive do
       uploaded_files =
         consume_uploaded_entries(socket, :picture, fn %{path: path}, entry ->
           # Generate a unique filename with proper extension
-          extension = Path.extname(entry.client_name)
-          filename = "#{user_id}_#{System.system_time(:millisecond)}_#{:rand.uniform(1000)}#{extension}"
+          extension = Socialite.FileUpload.get_extension(entry.client_name)
+          filename = Socialite.FileUpload.generate_filename(user_id, extension)
+          content_type = Socialite.FileUpload.get_content_type(extension)
 
-          # Use different paths for development vs production
-          dest_path = if Mix.env() == :prod do
-            Path.join(["/app/uploads", filename])
-          else
-            Path.join(["priv", "static", "uploads", filename])
-          end
-
-          # Ensure the uploads directory exists
-          File.mkdir_p!(Path.dirname(dest_path))
-
-          # Copy the uploaded file to the destination
-          case File.cp(path, dest_path) do
-            :ok ->
-              # Return the URL path for the uploaded file
-              "/uploads/#{filename}"
-            {:error, reason} ->
-              raise "Failed to save file: #{reason}"
+          # Upload using the FileUpload service
+          case Socialite.FileUpload.upload_file(path, filename, content_type) do
+            {:ok, url} -> url
+            {:error, reason} -> raise "Upload failed: #{reason}"
           end
         end)
 
@@ -257,28 +245,45 @@ defmodule SocialiteWeb.SettingsLive do
   @impl true
   def handle_event("delete_picture", %{"picture_id" => picture_id}, socket) do
     user_id = socket.assigns.user.id
+    picture_id = String.to_integer(picture_id)
 
-    case Accounts.delete_user_picture(user_id, String.to_integer(picture_id)) do
-      {:ok, deleted_picture} ->
-        # Delete the file from the filesystem
-        file_path = if Mix.env() == :prod do
-          Path.join(["/app", deleted_picture.url])
-        else
-          Path.join(["priv", "static", deleted_picture.url])
+    # Get the picture to find the file URL
+    case Accounts.get_user_picture(user_id, picture_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Picture not found")}
+
+      picture ->
+        # Delete the file from storage
+        case Socialite.FileUpload.delete_file(picture.url) do
+          :ok ->
+            # Delete the picture record from database
+            case Accounts.delete_user_picture(user_id, picture_id) do
+              {:ok, _} ->
+                user_pictures = Accounts.list_user_pictures(user_id)
+                picture_count = Accounts.count_user_pictures(user_id)
+
+                {:noreply,
+                 socket
+                 |> put_flash(:info, "Picture deleted successfully")
+                 |> assign(:user_pictures, user_pictures)
+                 |> assign(:picture_count, picture_count)}
+
+              {:error, reason} ->
+                {:noreply, put_flash(socket, :error, "Failed to delete picture: #{reason}")}
+            end
+
+          {:error, reason} ->
+            # Still try to delete from database even if file deletion failed
+            Accounts.delete_user_picture(user_id, picture_id)
+            user_pictures = Accounts.list_user_pictures(user_id)
+            picture_count = Accounts.count_user_pictures(user_id)
+
+            {:noreply,
+             socket
+             |> put_flash(:warning, "Picture deleted from database but file deletion failed: #{reason}")
+             |> assign(:user_pictures, user_pictures)
+             |> assign(:picture_count, picture_count)}
         end
-        File.rm(file_path)
-
-        user_pictures = Accounts.list_user_pictures(user_id)
-        picture_count = Accounts.count_user_pictures(user_id)
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Picture deleted successfully")
-         |> assign(:user_pictures, user_pictures)
-         |> assign(:picture_count, picture_count)}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete picture")}
     end
   end
 

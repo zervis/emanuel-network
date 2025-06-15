@@ -51,6 +51,7 @@ defmodule Socialite.MixProject do
        compile: false,
        depth: 1},
       {:swoosh, "~> 1.5"},
+      {:gen_smtp, "~> 1.2"},
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
@@ -62,7 +63,11 @@ defmodule Socialite.MixProject do
       {:pbkdf2_elixir, "~> 2.0"},
       {:geo_postgis, "~> 3.4"},
       {:timex, "~> 3.7"},
-      {:uuid, "~> 1.1"}
+      {:uuid, "~> 1.1"},
+      {:ex_aws, "~> 2.1"},
+      {:ex_aws_s3, "~> 2.0"},
+      {:hackney, "~> 1.9"},
+      {:sweet_xml, "~> 0.6"}
     ]
   end
 

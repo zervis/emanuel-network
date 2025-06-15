@@ -18,8 +18,8 @@ defmodule SocialiteWeb.GroupsLive do
     # Add safety check for current_user_id
     if current_user_id do
       # Use Repo.get instead of get_user! to avoid exceptions
-      case Socialite.Repo.get(Socialite.User, current_user_id) do
-        %Socialite.User{} = current_user ->
+      case Socialite.Repo.get(Socialite.Accounts.User, current_user_id) do
+        %Socialite.Accounts.User{} = current_user ->
           # Get user groups and add distance information
           user_groups = Groups.get_user_groups(current_user_id)
           user_groups_with_distance = Groups.add_distance_to_groups(user_groups, current_user.latitude, current_user.longitude)

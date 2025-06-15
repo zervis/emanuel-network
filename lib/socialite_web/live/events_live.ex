@@ -10,8 +10,8 @@ defmodule SocialiteWeb.EventsLive do
 
     if current_user_id do
       # Safely get user from database
-      case Socialite.Repo.get(Socialite.User, current_user_id) do
-        %Socialite.User{} = current_user ->
+      case Socialite.Repo.get(Socialite.Accounts.User, current_user_id) do
+        %Socialite.Accounts.User{} = current_user ->
           # Get user's joined groups
           user_groups = Groups.get_user_groups(current_user_id)
 

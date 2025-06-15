@@ -4,7 +4,7 @@ defmodule SocialiteWeb.Plugs.AssignCurrentUser do
   alias Socialite.Messages
   alias Socialite.Notifications
   alias Socialite.Repo
-  alias Socialite.User
+  alias Socialite.Accounts.User
 
   def init(opts), do: opts
 
@@ -12,8 +12,8 @@ defmodule SocialiteWeb.Plugs.AssignCurrentUser do
     current_user_id = get_session(conn, :current_user_id)
 
     current_user = if current_user_id do
-      case Socialite.Repo.get(Socialite.User, current_user_id) do
-        %Socialite.User{} = user -> user
+      case Socialite.Repo.get(User, current_user_id) do
+        %User{} = user -> user
         nil -> nil
       end
     else
