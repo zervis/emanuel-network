@@ -22,6 +22,10 @@ processes = [ "app" ]
   soft_limit = 1_000
   type = "connections"
 
+[mounts]
+source = "uploads_data"
+destination = "/app/uploads"
+
 [[vm]]
 cpu_kind = "shared"
 cpus = 1

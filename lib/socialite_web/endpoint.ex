@@ -1,6 +1,13 @@
 defmodule SocialiteWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :socialite
 
+  # Define uploads path based on environment
+  @uploads_path (if Mix.env() == :prod do
+    "/app/uploads"
+  else
+    Path.expand("./priv/static/uploads")
+  end)
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
@@ -28,7 +35,7 @@ defmodule SocialiteWeb.Endpoint do
   # Serve uploaded files
   plug Plug.Static,
     at: "/uploads",
-    from: Path.expand("./priv/static/uploads"),
+    from: @uploads_path,
     gzip: false
 
   # Code reloading can be explicitly enabled under the

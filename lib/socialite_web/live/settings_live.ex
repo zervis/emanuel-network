@@ -182,7 +182,13 @@ defmodule SocialiteWeb.SettingsLive do
           # Generate a unique filename with proper extension
           extension = Path.extname(entry.client_name)
           filename = "#{user_id}_#{System.system_time(:millisecond)}_#{:rand.uniform(1000)}#{extension}"
-          dest_path = Path.join(["priv", "static", "uploads", filename])
+
+          # Use different paths for development vs production
+          dest_path = if Mix.env() == :prod do
+            Path.join(["/app/uploads", filename])
+          else
+            Path.join(["priv", "static", "uploads", filename])
+          end
 
           # Ensure the uploads directory exists
           File.mkdir_p!(Path.dirname(dest_path))
@@ -255,7 +261,11 @@ defmodule SocialiteWeb.SettingsLive do
     case Accounts.delete_user_picture(user_id, String.to_integer(picture_id)) do
       {:ok, deleted_picture} ->
         # Delete the file from the filesystem
-        file_path = Path.join(["priv", "static", deleted_picture.url])
+        file_path = if Mix.env() == :prod do
+          Path.join(["/app", deleted_picture.url])
+        else
+          Path.join(["priv", "static", deleted_picture.url])
+        end
         File.rm(file_path)
 
         user_pictures = Accounts.list_user_pictures(user_id)
